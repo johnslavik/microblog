@@ -68,7 +68,7 @@ error handling in Bash.
 Consider this example:
 
 ```bash
-DIR=$(mktemp)
+DIR=$(mktemp -d)
 cd $DIR
 ```
 
