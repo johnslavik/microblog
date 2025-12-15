@@ -34,7 +34,7 @@ Without `-e`, failures are easy to miss and hard to debug.
 
 `-u` causes parameter expansion to fail when a variable is unset.
 
-This is a life‑saver for cases like:
+This is a life-saver for cases like:
 
 ```bash
 rm -rf "$HOME/$CUSTOM_DIR"
