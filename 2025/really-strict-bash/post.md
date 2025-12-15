@@ -243,14 +243,31 @@ set -x
 cp "$SRC" "$DST"
 ```
 
-If you want tracing enabled by default, update the header one last time:
+**Warning**: While `-x` is extremely useful for debugging, enabling it by default in production scripts has significant drawbacks:
+- **Security**: It can expose sensitive information like passwords, API keys, or tokens in logs
+- **Verbosity**: It creates extremely verbose output that can obscure actual errors
+- **Performance**: It can significantly slow down script execution
+
+For debugging, you can enable `-x` temporarily:
+
+```bash
+set -x
+# ... debugging section ...
+set +x
+```
+
+Or make it conditional based on an environment variable:
+
+```bash
+[[ "${DEBUG:-}" == "true" ]] && set -x
+```
+
+If you still want tracing enabled by default (not recommended for production), update the header:
 
 ```diff
 -set -CETeuo pipefail
 +set -CETeuxo pipefail
 ```
-
-(Or make it conditional if you prefer.)
 
 ## Syntax checking: fail before doing damage
 
