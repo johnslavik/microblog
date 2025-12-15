@@ -130,8 +130,9 @@ Failing early is good, but *knowing where and why* a failure occurred is even be
 Bash provides additional options that, when combined, make errors predictable and
 diagnosable.
 
-### `-E`: make `ERR` traps actually useful
+### `-E` and `ERR` traps: deeper dive
 
+Earlier, we enabled the `-E` flag to improve error handling (see above). Here, we'll take a closer look at how `-E` specifically affects the behavior of `ERR` traps.
 Without `-E`, an `ERR` trap does not run in functions, command substitutions, or subshells.
 
 ```bash
