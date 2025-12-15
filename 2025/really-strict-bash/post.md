@@ -293,7 +293,7 @@ Which leaves us with the final, fully evolved header:
 ```bash
 set -CETeuxo pipefail
 : Check syntax
-bash "$0"
+bash -n "$0"
 ```
 
 It looks intimidating, but every character is there because Bash is *forgiving by default* —
