@@ -10,6 +10,13 @@ The `-e` and `-u` flags in particular are invaluable when something goes wrong i
 script. They enable behavior that most programming languages provide by default, but
 Bash does not.
 
+We will start with a minimal header and progressively make it stricter as new failure
+modes appear.
+
+```bash
+set -eu
+```
+
 ## The commonly known flags
 
 ### `-e`: exit on error
@@ -44,6 +51,12 @@ directory.
 
 Both `-e` and `-u` are specified in the POSIX standard (IEEE 1003.1‑2001), documented
 [here](https://pubs.opengroup.org/onlinepubs/9799919799/utilities/V3_chap02.html#set).
+
+At this point, our header looks like this:
+
+```bash
+set -eu
+```
 
 ## But this isn’t everything
 
@@ -90,7 +103,7 @@ In pipelines, `-e` alone is not enough to preserve this information.
 `-E` makes `-e` effective in functions, command substitutions, and subshells.
 It is not specified by POSIX, but it is supported by Bash and should be used in Bash scripts.
 
-Updating our “strict mode” header:
+We update our header accordingly:
 
 ```diff
 -set -eu
@@ -103,8 +116,10 @@ By default, a pipeline’s exit status is that of its **last** command.
 
 With `pipefail`, the pipeline fails if *any* command in it fails, and the failure propagates.
 
+Updating the header again:
+
 ```diff
--set -eu
+-set -Eeu
 +set -Eeuo pipefail
 ```
 
@@ -130,7 +145,7 @@ fail() {
 fail   # nothing happens
 ```
 
-With `-E`:
+With `-E` (which we already enabled):
 
 ```bash
 set -Ee
@@ -143,7 +158,11 @@ fail() {
 fail   # Error on line 7
 ```
 
-This is essential for centralized error handling in non‑trivial scripts.
+Our header remains unchanged here:
+
+```bash
+set -Eeuo pipefail
+```
 
 ### `-T`: inherit traps into functions and subshells
 
@@ -157,11 +176,16 @@ set -ETe
 trap 'echo "ERR at ${BASH_SOURCE}:${LINENO}"' ERR
 ```
 
-Without `-T`, traps may silently stop firing as your script grows.
+We now tighten the header further:
+
+```diff
+-set -Eeuo pipefail
++set -ETeuo pipefail
+```
 
 ## Pipelines and silent failures
 
-Consider this pipeline:
+We already enabled `pipefail`, but it is worth seeing *why* it matters.
 
 ```bash
 set -e
@@ -173,16 +197,13 @@ echo "done"
 If `grep` finds no matches, it exits non‑zero — but `uniq` succeeds, so the pipeline as a
 whole succeeds. The script prints `done`.
 
-With `pipefail`:
+With `pipefail` (already in our header), the failure propagates correctly.
+
+No header change here:
 
 ```bash
-set -euo pipefail
-
-grep "needle" haystack.txt | sort | uniq
-echo "done"   # never reached
+set -ETeuo pipefail
 ```
-
-The failure now propagates correctly, preventing subtle, half‑broken states.
 
 ## `-C`: protect files from accidental clobbering
 
@@ -201,20 +222,15 @@ With `-C`:
 
 ```bash
 set -C
-
 > "$OUTPUT"
-# bash: output.txt: cannot overwrite existing file
 ```
 
-Overwriting still requires an explicit opt‑in:
+We update the header again:
 
-```bash
-> "$OUTPUT"| true
-# or
->| "$OUTPUT"
+```diff
+-set -ETeuo pipefail
++set -CETeuo pipefail
 ```
-
-Overwrites should be deliberate, not accidental.
 
 ## `-x`: make execution observable
 
@@ -227,13 +243,14 @@ set -x
 cp "$SRC" "$DST"
 ```
 
-You see the actual values used at runtime.
+If you want tracing enabled by default, update the header one last time:
 
-A common pattern is to make this conditional:
-
-```bash
-[[ ${DEBUG:-} ]] && set -x
+```diff
+-set -CETeuo pipefail
++set -CETeuxo pipefail
 ```
+
+(Or make it conditional if you prefer.)
 
 ## Syntax checking: fail before doing damage
 
@@ -261,7 +278,7 @@ bash -n my-script.sh
 
 ## Putting it all together
 
-Each flag addresses a distinct failure mode:
+Each flag was added to eliminate a specific failure mode:
 
 - `-e`            exit on errors  
 - `-u`            fail on unset variables  
@@ -271,16 +288,15 @@ Each flag addresses a distinct failure mode:
 - `-C`            prevent accidental overwrites  
 - `-x`            trace execution  
 
-That’s how we end up with this intentionally strict — and admittedly cryptic — header:
+Which leaves us with the final, fully evolved header:
 
-```diff
--set -eu
-+set -CETeuxo pipefail
-+: Check syntax
-+bash "$0"
+```bash
+set -CETeuxo pipefail
+: Check syntax
+bash "$0"
 ```
 
-It looks intimidating, but every flag exists because Bash is *forgiving by default* —
+It looks intimidating, but every character is there because Bash is *forgiving by default* —
 sometimes dangerously so.
 
 Once you internalize these options, your scripts stop failing silently and start failing
